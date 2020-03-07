@@ -13,6 +13,9 @@ val spockBomVersion: String by project
 
 dependencies {
     implementation(project(":domain"))
+    implementation(project(":repository"))
+    implementation(project(":service"))
+    implementation(project(":application"))
 
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

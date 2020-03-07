@@ -1,2 +1,2 @@
 rootProject.name = "ddd"
-include("domain", "repository", "service", "infrastructure")
+include("domain", "repository", "service", "application", "infrastructure")
