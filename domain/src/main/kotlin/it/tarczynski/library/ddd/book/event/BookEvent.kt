@@ -2,42 +2,33 @@ package it.tarczynski.library.ddd.book.event
 
 import it.tarczynski.library.ddd.book.model.Book
 import it.tarczynski.library.ddd.book.model.BookId
+import it.tarczynski.library.ddd.core.event.DomainEvent
 import it.tarczynski.library.ddd.reader.model.ReaderId
 import it.tarczynski.library.ddd.title.model.TitleId
-import java.time.LocalDateTime
-import java.util.*
 
-sealed class BookEvent(val bookId: BookId) {
-    private val eventId = UUID.randomUUID()
-    val timestamp: LocalDateTime = LocalDateTime.now()
-    abstract fun applyTo(book: Book): Book
+sealed class BookEvent(bookId: BookId) : DomainEvent(bookId)
 
-    override fun equals(other: Any?): Boolean {
-        return other is BookEvent
-                && this.eventId == other.eventId
-    }
-
-    override fun hashCode(): Int {
-        return eventId.hashCode() * 31
-    }
-}
-
-class BookAdded(bookId: BookId, val titleId: TitleId) : BookEvent(bookId) {
+class BookAddedToTitle(bookId: BookId, val titleId: TitleId) : BookEvent(bookId) {
+    override val type = "book.added"
     override fun applyTo(book: Book) = book.copy(titleId = titleId, status = Book.Status.AVAILABLE)
 }
 
 class BookBorrowed(bookId: BookId, val readerId: ReaderId) : BookEvent(bookId) {
+    override val type = "book.borrowed"
     override fun applyTo(book: Book) = book.copy(status = Book.Status.BORROWED)
 }
 
 class BookReturned(bookId: BookId, val readerId: ReaderId) : BookEvent(bookId) {
-    override fun applyTo(book: Book) = book.copy(status = Book.Status.RETURNED)
+    override val type = "book.returned"
+    override fun applyTo(book: Book) = book.copy(status = Book.Status.AVAILABLE)
 }
 
 class BookLost(bookId: BookId, val readerId: ReaderId) : BookEvent(bookId) {
+    override val type = "book.lost"
     override fun applyTo(book: Book) = book.copy(status = Book.Status.LOST)
 }
 
 class BookDestroyed(bookId: BookId, val readerId: ReaderId) : BookEvent(bookId) {
+    override val type = "book.destroyed"
     override fun applyTo(book: Book) = book.copy(status = Book.Status.DESTROYED)
 }

@@ -4,26 +4,30 @@ import it.tarczynski.library.ddd.book.event.*
 import it.tarczynski.library.ddd.book.policy.BookBorrowingPolicy
 import it.tarczynski.library.ddd.reader.model.ReaderId
 import it.tarczynski.library.ddd.title.model.TitleId
-import java.lang.IllegalArgumentException
 import java.lang.IllegalStateException
 
 data class Book private constructor(val id: BookId,
                                     val titleId: TitleId? = null,
-                                    val status: Status = Status.UNKNOWN,
-                                    val bookEvents: List<BookEvent> = mutableListOf()) {
-    private val events: MutableList<BookEvent>
-        get() = bookEvents as MutableList<BookEvent>
+                                    val status: Status = Status.INITIALIZED,
+                                    private val bookEvents: List<BookEvent> = listOf()) {
+    val uncommittedEvents: List<BookEvent>
+        get() = bookEvents
 
     fun addToTitle(titleId: TitleId): Book {
         checkAlreadyAdded()
-        events.add(BookAdded(id, titleId))
-        return copy(titleId = titleId, status = Status.AVAILABLE)
+        return copy(
+                titleId = titleId,
+                status = Status.AVAILABLE,
+                bookEvents = bookEvents + BookAddedToTitle(id, titleId)
+        )
     }
 
     fun borrow(readerId: ReaderId, borrowingPolicy: BookBorrowingPolicy): Book {
         borrowingPolicy.validate(this, readerId)
-        events.add(BookBorrowed(id, readerId))
-        return copy(status = Status.BORROWED)
+        return copy(
+                status = Status.BORROWED,
+                bookEvents = bookEvents + BookBorrowed(id, readerId)
+        )
     }
 
     fun markAsLost(readerId: ReaderId): Book {
@@ -36,6 +40,8 @@ data class Book private constructor(val id: BookId,
         TODO()
     }
 
+    fun markCommitted() = copy(bookEvents = listOf())
+
     private fun checkAlreadyDestroyed() {
         checkStatus("Book already marked as destroyed") { it is BookDestroyed }
     }
@@ -45,7 +51,9 @@ data class Book private constructor(val id: BookId,
     }
 
     private fun checkAlreadyAdded() {
-        checkStatus("Book already added!") { it is BookAdded }
+        if (status != Status.INITIALIZED) {
+            throw IllegalStateException("Book already added to title")
+        }
     }
 
     private fun checkStatus(message: String, p: (BookEvent) -> Boolean) {
@@ -54,17 +62,17 @@ data class Book private constructor(val id: BookId,
 
     companion object {
 
+        @JvmStatic
         fun from(id: BookId, events: List<BookEvent>): Book {
             return events.fold(Book(id)) { book, event -> event.applyTo(book) }
         }
 
     }
 
-    enum class Status(val description: String = "") {
-        UNKNOWN("The book is unknown - hasn't been added to the library"),
+    enum class Status {
+        INITIALIZED,
         AVAILABLE,
         BORROWED,
-        RETURNED,
         LOST,
         DESTROYED,
         REMOVED

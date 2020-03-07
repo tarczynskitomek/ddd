@@ -1,3 +1,6 @@
 package it.tarczynski.library.ddd.title.model
 
-inline class TitleId(val value: String)
+import it.tarczynski.library.ddd.core.event.AggregateId
+import java.util.*
+
+class TitleId(value: UUID) : AggregateId(value)

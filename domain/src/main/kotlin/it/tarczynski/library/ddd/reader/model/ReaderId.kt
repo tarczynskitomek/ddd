@@ -1,4 +1,6 @@
 package it.tarczynski.library.ddd.reader.model
 
-class ReaderId
+import it.tarczynski.library.ddd.core.event.AggregateId
+import java.util.*
 
+class ReaderId(value: UUID) : AggregateId(value)

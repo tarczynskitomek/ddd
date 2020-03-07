@@ -1,3 +1,6 @@
 package it.tarczynski.library.ddd.book.model
 
-inline class BookId(val value: String)
+import it.tarczynski.library.ddd.core.event.AggregateId
+import java.util.UUID
+
+class BookId(value: UUID) : AggregateId(value)
