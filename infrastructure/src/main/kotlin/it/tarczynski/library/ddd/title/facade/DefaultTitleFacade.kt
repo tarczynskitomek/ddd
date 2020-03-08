@@ -1,5 +1,7 @@
 package it.tarczynski.library.ddd.title.facade
 
+import it.tarczynski.library.ddd.book.model.Book
+import it.tarczynski.library.ddd.books.repository.Books
 import it.tarczynski.library.ddd.title.model.CreateTitleRequest
 import it.tarczynski.library.ddd.title.model.Title
 import it.tarczynski.library.ddd.title.repository.Titles
@@ -8,17 +10,23 @@ import org.springframework.transaction.annotation.Transactional
 
 @Component
 @Transactional
-class DefaultTitleFacade(private val titles: Titles) : TitleFacade {
+class DefaultTitleFacade(private val titles: Titles,
+                         private val books: Books) : TitleFacade {
 
-    override fun createTitle(request: CreateTitleRequest): CreateTitleResponse {
+    override fun createTitleWithBooks(request: CreateTitleRequest) {
         Title.from(request)
-                .let { titles.save(it) } // to chyba nie jest konieczne, ponieważ wcześniej możemy oddelegować sprawdzanie
-                // czy można książkę utworzyć
-                // zrobić event o tym, że utworzono
-                // zapisać event i jak nie wybuchnie - opublikowaać, wszystko w jednej transakcji
-                // odpowiedzieć - 201 CREATED
-                .let {  }
-        TODO()
+                .let { title -> titles.save(title) }
+                .apply { createBooks(this, request.bookCount) }
+    }
+
+    private fun createBooks(title: Title, bookCount: Int) {
+        val newBooks = mutableListOf<Book>()
+        for (i in 1..bookCount) {
+            val book = Book.initialize()
+            book.addToTitle(title.id)
+            newBooks.add(book)
+        }
+        books.saveAll(newBooks)
     }
 
 }

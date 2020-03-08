@@ -4,6 +4,6 @@ import it.tarczynski.library.ddd.title.model.CreateTitleRequest
 
 interface TitleFacade {
 
-    fun createTitle(request: CreateTitleRequest): CreateTitleResponse
+    fun createTitleWithBooks(request: CreateTitleRequest)
 
 }

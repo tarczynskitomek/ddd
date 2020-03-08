@@ -2,15 +2,19 @@ package it.tarczynski.library.ddd.book.model
 
 import it.tarczynski.library.ddd.book.event.*
 import it.tarczynski.library.ddd.book.policy.BookBorrowingPolicy
+import it.tarczynski.library.ddd.core.aggregate.Aggregate
+import it.tarczynski.library.ddd.core.event.AggregateId
 import it.tarczynski.library.ddd.reader.model.ReaderId
 import it.tarczynski.library.ddd.title.model.TitleId
 import java.lang.IllegalStateException
+import java.util.*
 
-data class Book private constructor(val id: BookId,
+data class Book private constructor(override val id: BookId,
                                     val titleId: TitleId? = null,
                                     val status: Status = Status.INITIALIZED,
-                                    private val bookEvents: List<BookEvent> = listOf()) {
-    val uncommittedEvents: List<BookEvent>
+                                    private val bookEvents: List<BookEvent> = listOf()) : Aggregate<Book, BookId> {
+
+    override val uncommittedEvents: List<BookEvent>
         get() = bookEvents
 
     fun addToTitle(titleId: TitleId): Book {
@@ -32,32 +36,48 @@ data class Book private constructor(val id: BookId,
 
     fun markAsLost(readerId: ReaderId): Book {
         checkAlreadyLost()
-        TODO()
+        return copy(
+                status = Status.LOST,
+                bookEvents = bookEvents + BookLost(id, readerId)
+        )
     }
 
     fun markAsDestroyed(readerId: ReaderId): Book {
         checkAlreadyDestroyed()
-        TODO()
+        return copy(
+                status = Status.DESTROYED,
+                bookEvents = bookEvents + BookDestroyed(id, readerId)
+        )
     }
 
-    fun markCommitted() = copy(bookEvents = listOf())
+    fun removeBook(): Book {
+        checkAlreadyRemoved()
+        return copy(
+                status = Status.REMOVED,
+                bookEvents = bookEvents + BookRemoved(id)
+        )
+    }
+
+    override fun commitEvents() = copy(bookEvents = listOf())
 
     private fun checkAlreadyDestroyed() {
-        checkStatus("Book already marked as destroyed") { it is BookDestroyed }
+        if (status == Status.DESTROYED)
+            throw IllegalStateException("Book already marked as destroyed")
     }
 
     private fun checkAlreadyLost() {
-        checkStatus("Book already marked as lost") { it is BookLost }
+        if (status == Status.LOST)
+            throw IllegalStateException("Book already marked as LOST")
     }
 
     private fun checkAlreadyAdded() {
-        if (status != Status.INITIALIZED) {
+        if (status != Status.INITIALIZED)
             throw IllegalStateException("Book already added to title")
-        }
     }
 
-    private fun checkStatus(message: String, p: (BookEvent) -> Boolean) {
-        bookEvents.find(p)?.let { throw IllegalStateException(message) }
+    private fun checkAlreadyRemoved() {
+        if (status != Status.REMOVED)
+            throw IllegalStateException("Book already removed")
     }
 
     companion object {
@@ -66,6 +86,9 @@ data class Book private constructor(val id: BookId,
         fun from(id: BookId, events: List<BookEvent>): Book {
             return events.fold(Book(id)) { book, event -> event.applyTo(book) }
         }
+
+        @JvmStatic
+        fun initialize() = Book(BookId(UUID.randomUUID()))
 
     }
 
