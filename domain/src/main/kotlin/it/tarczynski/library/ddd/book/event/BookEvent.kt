@@ -6,7 +6,7 @@ import it.tarczynski.library.ddd.core.event.DomainEvent
 import it.tarczynski.library.ddd.reader.model.ReaderId
 import it.tarczynski.library.ddd.title.model.TitleId
 
-sealed class BookEvent(bookId: BookId) : DomainEvent<Book>(bookId)
+sealed class BookEvent(bookId: BookId) : DomainEvent<BookId, Book>(bookId)
 
 class BookAddedToTitle(bookId: BookId, val titleId: TitleId) : BookEvent(bookId) {
     override val type = "book.added"

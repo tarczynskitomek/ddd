@@ -4,16 +4,31 @@ import it.tarczynski.library.ddd.core.aggregate.Aggregate
 import java.time.LocalDateTime
 import java.util.*
 
-open class AggregateId(val uuid: UUID)
-
-abstract class DomainEvent<A : Aggregate<A, out AggregateId>>(val id: AggregateId,
-                                                              val occurred: LocalDateTime = LocalDateTime.now()) {
-
-    abstract fun applyTo(aggregate: A): A
-    abstract val type: String
+open class AggregateId(val uuid: UUID) {
 
     override fun equals(other: Any?): Boolean {
-        return other is DomainEvent<*> && other.id == id && other.occurred == occurred
+        return other is AggregateId && other.uuid == this.uuid
+    }
+
+    override fun hashCode(): Int {
+        return uuid.hashCode() * 31
+    }
+
+    override fun toString(): String {
+        return uuid.toString()
+    }
+
+}
+
+abstract class DomainEvent<ID: AggregateId, A : Aggregate<A, ID>>(
+        val id: ID,
+        val occurred: LocalDateTime = LocalDateTime.now()) {
+
+    abstract val type: String
+    abstract fun applyTo(aggregate: A): A
+
+    override fun equals(other: Any?): Boolean {
+        return other is DomainEvent<*, *> && other.id == id && other.occurred == occurred
     }
 
     override fun hashCode(): Int {

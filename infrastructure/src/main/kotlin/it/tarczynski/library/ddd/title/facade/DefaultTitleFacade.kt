@@ -2,6 +2,7 @@ package it.tarczynski.library.ddd.title.facade
 
 import it.tarczynski.library.ddd.book.model.Book
 import it.tarczynski.library.ddd.books.repository.Books
+import it.tarczynski.library.ddd.core.TitleWithBooks
 import it.tarczynski.library.ddd.title.model.CreateTitleRequest
 import it.tarczynski.library.ddd.title.model.Title
 import it.tarczynski.library.ddd.title.repository.Titles
@@ -13,20 +14,18 @@ import org.springframework.transaction.annotation.Transactional
 class DefaultTitleFacade(private val titles: Titles,
                          private val books: Books) : TitleFacade {
 
-    override fun createTitleWithBooks(request: CreateTitleRequest) {
-        Title.from(request)
+    override fun createTitleWithBooks(request: CreateTitleRequest): TitleWithBooks {
+        return Title.from(request)
                 .let { title -> titles.save(title) }
-                .apply { createBooks(this, request.bookCount) }
+                .let { createBooks(it, request.bookCount) }
     }
 
-    private fun createBooks(title: Title, bookCount: Int) {
+    private fun createBooks(title: Title, bookCount: Int): TitleWithBooks {
         val newBooks = mutableListOf<Book>()
         for (i in 1..bookCount) {
-            val book = Book.initialize()
-            book.addToTitle(title.id)
-            newBooks.add(book)
+            newBooks.add(Book.initialize().addToTitle(title.id))
         }
-        books.saveAll(newBooks)
+        return TitleWithBooks(title, books.saveAll(newBooks))
     }
 
 }

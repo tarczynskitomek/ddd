@@ -11,19 +11,19 @@ import spock.lang.Specification
 class DefaultTitleFacadeSpec extends Specification {
 
     private InMemoryEventStore eventStore = new InMemoryEventStore()
-    private Titles titles = Spy(new TitleRepository(eventStore))
-    private Books books = Spy(new BookRepository(eventStore))
+    private Titles titles = new TitleRepository(eventStore)
+    private Books books = new BookRepository(eventStore)
 
     private TitleFacade titleFacade = new DefaultTitleFacade(titles, books)
 
     def "createTitleWithBooks"() {
         given:
-            def request = new CreateTitleRequest("the title", 1, "iss")
+            def request = new CreateTitleRequest("the title", 1, "Description", null, null)
 
         when:
-            titleFacade.createTitleWithBooks(request)
+            def title = titleFacade.createTitleWithBooks(request)
 
         then:
-            eventStore.persistedEvents.size() == 2
+            titles.findBy(title.first.id).id == title.first.id
     }
 }
