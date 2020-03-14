@@ -1,5 +1,6 @@
 package it.tarczynski.library.ddd.title.model
 
+import it.tarczynski.library.ddd.book.model.Book
 import it.tarczynski.library.ddd.core.aggregate.Aggregate
 import it.tarczynski.library.ddd.core.event.AggregateId
 import it.tarczynski.library.ddd.core.event.DomainEvent

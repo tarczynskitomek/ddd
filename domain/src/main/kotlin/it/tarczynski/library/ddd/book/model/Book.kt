@@ -3,7 +3,6 @@ package it.tarczynski.library.ddd.book.model
 import it.tarczynski.library.ddd.book.event.*
 import it.tarczynski.library.ddd.book.policy.BookBorrowingPolicy
 import it.tarczynski.library.ddd.core.aggregate.Aggregate
-import it.tarczynski.library.ddd.core.event.AggregateId
 import it.tarczynski.library.ddd.reader.model.ReaderId
 import it.tarczynski.library.ddd.title.model.TitleId
 import java.lang.IllegalStateException
@@ -12,53 +11,48 @@ import java.util.*
 data class Book private constructor(override val id: BookId,
                                     val titleId: TitleId? = null,
                                     val status: Status = Status.INITIALIZED,
-                                    private val bookEvents: List<BookEvent> = listOf()) : Aggregate<Book, BookId> {
+                                    private val bookEvents: MutableList<BookEvent> = mutableListOf()) : Aggregate<Book, BookId> {
 
     override val uncommittedEvents: List<BookEvent>
         get() = bookEvents
 
     fun addToTitle(titleId: TitleId): Book {
         checkAlreadyAdded()
-        return copy(
-                titleId = titleId,
-                status = Status.AVAILABLE,
-                bookEvents = bookEvents + BookAddedToTitle(id, titleId)
-        )
+        val added = BookAddedToTitle(id, titleId)
+        bookEvents.add(added)
+        return added.applyTo(this)
     }
 
     fun borrow(readerId: ReaderId, borrowingPolicy: BookBorrowingPolicy): Book {
         borrowingPolicy.validate(this, readerId)
-        return copy(
-                status = Status.BORROWED,
-                bookEvents = bookEvents + BookBorrowed(id, readerId)
-        )
+        val bookBorrowed = BookBorrowed(id, readerId)
+        bookEvents.add(bookBorrowed)
+        return bookBorrowed.applyTo(this)
     }
 
     fun markAsLost(readerId: ReaderId): Book {
         checkAlreadyLost()
-        return copy(
-                status = Status.LOST,
-                bookEvents = bookEvents + BookLost(id, readerId)
-        )
+        val lost = BookLost(id, readerId)
+        bookEvents.add(lost)
+        return lost.applyTo(this)
     }
 
     fun markAsDestroyed(readerId: ReaderId): Book {
         checkAlreadyDestroyed()
-        return copy(
-                status = Status.DESTROYED,
-                bookEvents = bookEvents + BookDestroyed(id, readerId)
+        val destroyed = BookDestroyed(id, readerId)
+        bookEvents.add(destroyed)
+        return destroyed.applyTo(this
         )
     }
 
     fun removeBook(): Book {
         checkAlreadyRemoved()
         return copy(
-                status = Status.REMOVED,
-                bookEvents = bookEvents + BookRemoved(id)
+                status = Status.REMOVED
         )
     }
 
-    override fun commitEvents() = copy(bookEvents = listOf())
+    override fun commitEvents() = copy()
 
     private fun checkAlreadyDestroyed() {
         if (status == Status.DESTROYED)
